@@ -4,7 +4,7 @@ require "pstore/version"
 
 Gem::Specification.new do |spec|
   spec.name          = "pstore"
-  spec.version       = Pstore::VERSION
+  spec.version       = PStore::VERSION
   spec.authors       = ["Hiroshi SHIBATA"]
   spec.email         = ["hsbt@ruby-lang.org"]
 

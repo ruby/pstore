@@ -364,6 +364,9 @@ class PStore
   EMPTY_MARSHAL_DATA = Marshal.dump({})
   EMPTY_MARSHAL_CHECKSUM = CHECKSUM_ALGO.digest(EMPTY_MARSHAL_DATA)
 
+  EMPTY_MARSHAL_DATA.freeze
+  EMPTY_MARSHAL_CHECKSUM.freeze
+
   #
   # Open the specified filename (either in read-only mode or in
   # read-write mode) and lock it for reading or writing.
@@ -428,9 +431,12 @@ class PStore
 
   def on_windows?
     is_windows = RUBY_PLATFORM =~ /mswin|mingw|bccwin|wince/
-    self.class.__send__(:define_method, :on_windows?) do
+
+    on_windows_proc = Proc.new do
       is_windows
     end
+    Ractor.make_shareable(on_windows_proc) if defined?(Ractor)
+    self.class.__send__(:define_method, :on_windows?, &on_windows_proc) 
     is_windows
   end
 

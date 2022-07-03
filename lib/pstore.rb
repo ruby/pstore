@@ -28,7 +28,7 @@ require "digest"
 # There are three important concepts here (details at the links):
 #
 # - {Store}[rdoc-ref:PStore@The+Store]: a store is an instance of \PStore.
-# - {Enries}[rdoc-ref:PStore@Entries]: the store is hash-like;
+# - {Entries}[rdoc-ref:PStore@Entries]: the store is hash-like;
 #   each entry is the key for a stored object.
 # - {Transactions}[rdoc-ref:PStore@Transactions]: each transaction is a collection
 #   of prospective changes to the store;

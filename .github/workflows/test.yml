@@ -3,11 +3,18 @@ name: test
 on: [push, pull_request]
 
 jobs:
-  build:
+  ruby-versions:
+    uses: ruby/actions/.github/workflows/ruby_versions.yml@master
+    with:
+      engine: cruby
+      min_version: 2.4
+
+  test:
+    needs: ruby-versions
     name: build (${{ matrix.ruby }} / ${{ matrix.os }})
     strategy:
       matrix:
-        ruby: [ 2.7, 2.6, 2.5, 2.4, head ]
+        ruby: ${{ fromJson(needs.ruby-versions.outputs.versions) }}
         os: [ ubuntu-latest, macos-latest ]
     runs-on: ${{ matrix.os }}
     steps:
@@ -17,6 +24,6 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby }}
     - name: Install dependencies
-      run: bundle install
+      run: gem i test-unit test-unit-ruby-core
     - name: Run test
       run: rake test

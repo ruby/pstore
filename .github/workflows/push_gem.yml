@@ -10,12 +10,12 @@ permissions:
 
 jobs:
   push:
-    if: github.repository == 'ruby/etc'
+    if: github.repository == 'ruby/pstore'
     runs-on: ubuntu-latest
 
     environment:
       name: rubygems.org
-      url: https://rubygems.org/gems/etc
+      url: https://rubygems.org/gems/pstore
 
     permissions:
       contents: write

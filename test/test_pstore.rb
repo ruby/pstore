@@ -66,6 +66,16 @@ class PStoreTest < Test::Unit::TestCase
     end
   end
 
+  def test_data_should_be_stored_correctly_when_in_ultra_safe_mode
+    @pstore.ultra_safe = true
+    @pstore.transaction do
+      @pstore[:foo] = "bar"
+    end
+    @pstore.transaction(true) do
+      assert_equal "bar", @pstore[:foo]
+    end
+  end
+
   def test_writing_inside_readonly_transaction_raises_error
     assert_raise(PStore::Error) do
       @pstore.transaction(true) do

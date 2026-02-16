@@ -667,23 +667,16 @@ class PStore
     end
   end
 
-  def on_windows?
-    is_windows = RUBY_PLATFORM =~ /mswin|mingw|bccwin|wince/
-
-    on_windows_proc = Proc.new do
-      is_windows
-    end
-    Ractor.make_shareable(on_windows_proc) if defined?(Ractor)
-    self.class.__send__(:define_method, :on_windows?, &on_windows_proc) 
-    is_windows
-  end
+  ON_WINDOWS = true & (/mswin|mingw|bccwin|wince/ =~ RUBY_PLATFORM) # :nodoc:
+  private_constant :ON_WINDOWS
 
   def save_data(original_checksum, original_file_size, file)
     new_data = dump(@table)
 
     if new_data.bytesize != original_file_size || CHECKSUM_ALGO.digest(new_data) != original_checksum
-      if @ultra_safe && !on_windows?
-        # Windows doesn't support atomic file renames.
+      if @ultra_safe && !ON_WINDOWS
+        # Once a file is locked, Windows does not guarantee that the
+        # lock will be released until the file is closed.
         save_data_with_atomic_file_rename_strategy(new_data, file)
       else
         save_data_with_fast_strategy(new_data, file)

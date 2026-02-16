@@ -326,12 +326,14 @@ require "digest"
 #  end
 #
 class PStore
+  # :stopdoc:
   VERSION = "0.2.0"
 
   RDWR_ACCESS = {mode: IO::RDWR | IO::CREAT | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
   RD_ACCESS = {mode: IO::RDONLY | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
   WR_ACCESS = {mode: IO::WRONLY | IO::CREAT | IO::TRUNC | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
   private_constant :RDWR_ACCESS, :RD_ACCESS, :WR_ACCESS
+  # :startdoc:
 
   # The error type thrown by all PStore methods.
   class Error < StandardError
@@ -592,6 +594,8 @@ class PStore
   end
 
   private
+  # :stopdoc:
+
   # Constant for relieving Ruby's garbage collector.
   CHECKSUM_ALGO = %w[SHA512 SHA384 SHA256 SHA1 RMD160 MD5].each do |algo|
     begin

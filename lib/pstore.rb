@@ -331,6 +331,7 @@ class PStore
   RDWR_ACCESS = {mode: IO::RDWR | IO::CREAT | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
   RD_ACCESS = {mode: IO::RDONLY | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
   WR_ACCESS = {mode: IO::WRONLY | IO::CREAT | IO::TRUNC | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
+  private_constant :RDWR_ACCESS, :RD_ACCESS, :WR_ACCESS
 
   # The error type thrown by all PStore methods.
   class Error < StandardError
@@ -604,6 +605,7 @@ class PStore
 
   EMPTY_MARSHAL_DATA.freeze
   EMPTY_MARSHAL_CHECKSUM.freeze
+  private_constant :CHECKSUM_ALGO, :EMPTY_STRING, :EMPTY_MARSHAL_DATA, :EMPTY_MARSHAL_CHECKSUM
 
   #
   # Open the specified filename (either in read-only mode or in

@@ -380,7 +380,7 @@ class PStore
     if File::exist? file and not File::readable? file
       raise PStore::Error, format("file %s not readable", file)
     end
-    @filename = file
+    @filename = File.path(file)
     @abort = false
     @ultra_safe = false
     @thread_safe = thread_safe

@@ -624,21 +624,19 @@ class PStore
     if read_only
       begin
         file = File.new(filename, **RD_ACCESS)
-        begin
-          file.flock(File::LOCK_SH)
-          return file
-        rescue
-          file.close
-          raise
-        end
       rescue Errno::ENOENT
         return nil
       end
     else
       file = File.new(filename, **RDWR_ACCESS)
-      file.flock(File::LOCK_EX)
-      return file
     end
+    begin
+      file.flock(read_only ? File::LOCK_SH : File::LOCK_EX)
+    rescue Exception
+      file.close
+      raise
+    end
+    file
   end
 
   # Load the given PStore file.

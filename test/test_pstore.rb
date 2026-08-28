@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'pstore'
 require 'tmpdir'
+require 'pathname'
 
 class PStoreTest < Test::Unit::TestCase
   def setup
@@ -190,4 +191,14 @@ class PStoreTest < Test::Unit::TestCase
   def second_file
     File.join(Dir.tmpdir, "pstore.tmp2.#{Process.pid}")
   end
+  def test_path_like_filename_is_normalized
+    store = PStore.new(Pathname(@pstore_file))
+    store.ultra_safe = true
+    store.transaction { store[:foo] = "bar" }
+
+    assert_instance_of(String, store.path)
+    assert_equal(@pstore_file, store.path)
+    assert_equal("bar", store.transaction(true) { store[:foo] })
+  end
+
 end

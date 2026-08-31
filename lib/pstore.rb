@@ -329,10 +329,11 @@ class PStore
   # :stopdoc:
   VERSION = "0.2.1"
 
-  RDWR_ACCESS = {mode: IO::RDWR | IO::CREAT | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
-  RD_ACCESS = {mode: IO::RDONLY | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
-  WR_ACCESS = {mode: IO::WRONLY | IO::CREAT | IO::TRUNC | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
-  private_constant :RDWR_ACCESS, :RD_ACCESS, :WR_ACCESS
+  RDWR_ACCESS = IO::RDWR | IO::CREAT | IO::BINARY
+  RD_ACCESS = IO::RDONLY | IO::BINARY
+  WR_ACCESS = IO::WRONLY | IO::CREAT | IO::TRUNC | IO::BINARY
+  NOFOLLOW = IO.const_defined?(:NOFOLLOW) ? IO::NOFOLLOW : 0
+  private_constant :RDWR_ACCESS, :RD_ACCESS, :WR_ACCESS, :NOFOLLOW
   # :startdoc:
 
   # The error type thrown by all PStore methods.
@@ -378,8 +379,15 @@ class PStore
   #
   #   store = PStore.new(path, ultra_safe: true)
   #
+  # If keyword argument +follow_symlink+ is given as +false+, the store file
+  # itself must not be a symbolic link.  This option has no effect on platforms
+  # that do not support IO::NOFOLLOW.  Symbolic links in parent directories are
+  # not affected.
+  #
+  #   store = PStore.new(path, follow_symlink: false)
+  #
   def initialize(file, _thread_safe = false, thread_safe: _thread_safe,
-                 ultra_safe: false)
+                 ultra_safe: false, follow_symlink: true)
     dir = File::dirname(file)
     unless File::directory? dir
       raise PStore::Error, format("directory %s does not exist", dir)
@@ -391,6 +399,7 @@ class PStore
     @abort = false
     @ultra_safe = ultra_safe
     @thread_safe = thread_safe
+    @nofollow = follow_symlink ? 0 : NOFOLLOW
     @lock = Thread::Mutex.new
   end
 
@@ -632,12 +641,12 @@ class PStore
     loop do
       if read_only
         begin
-          file = File.new(filename, **RD_ACCESS)
+          file = File.new(filename, mode: RD_ACCESS | @nofollow, encoding: Encoding::ASCII_8BIT)
         rescue Errno::ENOENT
           return nil
         end
       else
-        file = File.new(filename, **RDWR_ACCESS)
+        file = File.new(filename, mode: RDWR_ACCESS | @nofollow, encoding: Encoding::ASCII_8BIT)
       end
       current = false
       begin
@@ -705,7 +714,7 @@ class PStore
 
   def save_data_with_atomic_file_rename_strategy(data, file)
     temp_filename = "#{@filename}.tmp.#{Process.pid}.#{rand 1000000}"
-    temp_file = File.new(temp_filename, **WR_ACCESS, perm: 0o000)
+    temp_file = File.new(temp_filename, mode: WR_ACCESS | @nofollow, encoding: Encoding::ASCII_8BIT, perm: 0o000)
     begin
       temp_file.flock(File::LOCK_EX)
       temp_file.write(data)

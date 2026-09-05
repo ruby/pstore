@@ -244,4 +244,33 @@ class PStoreTest < Test::Unit::TestCase
 
     assert_same(default, @pstore.transaction(true) { @pstore.fetch(:missing, default) })
   end
+
+  def test_lock_retries_when_atomic_save_replaces_file
+    fake_file = Struct.new(:closed) do
+      def flock(_mode)
+        true
+      end
+
+      def close
+        self.closed = true
+      end
+    end
+    first = fake_file.new(false)
+    second = fake_file.new(false)
+    files = [first, second]
+    original_new = File.method(:new)
+    original_identical = File.method(:identical?)
+    File.define_singleton_method(:new) { |*_args, **_kwargs| files.shift }
+    File.define_singleton_method(:identical?) { |file, _path| file.equal?(second) }
+
+    result = @pstore.send(:open_and_lock_file, @pstore_file, false)
+
+    assert_same(second, result)
+    assert_equal(true, first.closed)
+    assert_equal(false, second.closed)
+  ensure
+    result.close if result && !result.closed
+    File.define_singleton_method(:new, original_new) if original_new
+    File.define_singleton_method(:identical?, original_identical) if original_identical
+  end
 end

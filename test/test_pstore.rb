@@ -191,8 +191,6 @@ class PStoreTest < Test::Unit::TestCase
     File.join(Dir.tmpdir, "pstore.tmp2.#{Process.pid}")
   end
 
-=======
-
   def test_truncated_read_only_store_is_not_empty
     @pstore.transaction { @pstore[:foo] = "bar" }
     data = File.binread(@pstore_file)

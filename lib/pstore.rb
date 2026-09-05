@@ -651,6 +651,7 @@ class PStore
         table = load(file)
         raise Error, "PStore file seems to be corrupted." unless table.is_a?(Hash)
       rescue EOFError
+        raise unless file.size == 0
         # This seems to be a newly-created file.
         table = {}
       end

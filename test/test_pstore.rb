@@ -190,6 +190,15 @@ class PStoreTest < Test::Unit::TestCase
   def second_file
     File.join(Dir.tmpdir, "pstore.tmp2.#{Process.pid}")
   end
+
+  def test_truncated_read_only_store_is_not_empty
+    @pstore.transaction { @pstore[:foo] = "bar" }
+    data = File.binread(@pstore_file)
+    File.binwrite(@pstore_file, data.byteslice(0, data.bytesize - 1))
+
+    assert_raise(EOFError) { @pstore.transaction(true) { @pstore[:foo] } }
+  end
+
   def test_store_operations_require_transaction_owner
     ready = Thread::Queue.new
     release = Thread::Queue.new

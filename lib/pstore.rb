@@ -704,7 +704,7 @@ class PStore
       temp_file.write(data)
       temp_file.flush
       File.rename(temp_filename, @filename)
-    rescue
+    rescue Exception
       File.unlink(temp_file) rescue nil
       raise
     ensure

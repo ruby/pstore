@@ -273,4 +273,27 @@ class PStoreTest < Test::Unit::TestCase
     File.define_singleton_method(:new, original_new) if original_new
     File.define_singleton_method(:identical?, original_identical) if original_identical
   end
+ 
+  def test_interrupted_atomic_save_removes_temporary_file
+    return if /mswin|mingw|bccwin|wince/ =~ RUBY_PLATFORM
+
+    @pstore.transaction { @pstore[:foo] = "old" }
+    @pstore.ultra_safe = true
+    original_new = File.method(:new)
+    store_path = @pstore_file
+    File.define_singleton_method(:new) do |path, **options|
+      file = original_new.call(path, **options)
+      if path.start_with?("#{store_path}.tmp.")
+        file.define_singleton_method(:write) { |_data| raise Interrupt }
+      end
+      file
+    end
+
+    assert_raise(Interrupt) { @pstore.transaction { @pstore[:foo] = "new" } }
+    assert_equal([], Dir.glob("#{@pstore_file}.tmp.*"))
+    assert_equal("old", @pstore.transaction(true) { @pstore[:foo] })
+  ensure
+    File.define_singleton_method(:new, original_new) if original_new
+    Dir.glob("#{@pstore_file}.tmp.*").each { |path| File.unlink(path) rescue nil }
+  end
 end

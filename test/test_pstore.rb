@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'pstore'
 require 'tmpdir'
+require 'pathname'
 
 class PStoreTest < Test::Unit::TestCase
   def setup
@@ -295,5 +296,15 @@ class PStoreTest < Test::Unit::TestCase
   ensure
     File.define_singleton_method(:new, original_new) if original_new
     Dir.glob("#{@pstore_file}.tmp.*").each { |path| File.unlink(path) rescue nil }
+  end
+
+  def test_path_like_filename_is_normalized
+    store = PStore.new(Pathname(@pstore_file))
+    store.ultra_safe = true
+    store.transaction { store[:foo] = "bar" }
+
+    assert_instance_of(String, store.path)
+    assert_equal(@pstore_file, store.path)
+    assert_equal("bar", store.transaction(true) { store[:foo] })
   end
 end

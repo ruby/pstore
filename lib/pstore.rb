@@ -389,7 +389,7 @@ class PStore
 
   # Raises PStore::Error if the calling code is not in a PStore#transaction.
   def in_transaction
-    raise PStore::Error, "not in transaction" unless @lock.locked?
+    raise PStore::Error, "not in transaction" unless @lock.owned?
   end
   #
   # Raises PStore::Error if the calling code is not in a PStore#transaction or

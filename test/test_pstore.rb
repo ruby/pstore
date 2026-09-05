@@ -190,4 +190,23 @@ class PStoreTest < Test::Unit::TestCase
   def second_file
     File.join(Dir.tmpdir, "pstore.tmp2.#{Process.pid}")
   end
+  def test_store_operations_require_transaction_owner
+    ready = Thread::Queue.new
+    release = Thread::Queue.new
+    owner = Thread.new do
+      @pstore.transaction do
+        @pstore[:foo] = "bar"
+        ready << true
+        release.pop
+      end
+    end
+
+    ready.pop
+    assert_raise(PStore::Error) { @pstore[:foo] }
+    assert_raise(PStore::Error) { @pstore[:foo] = "other" }
+  ensure
+    release << true if release
+    owner.join if owner
+  end
+
 end

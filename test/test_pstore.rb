@@ -261,8 +261,10 @@ class PStoreTest < Test::Unit::TestCase
     files = [first, second]
     original_new = File.method(:new)
     original_identical = File.method(:identical?)
-    File.define_singleton_method(:new) { |*_args, **_kwargs| files.shift }
-    File.define_singleton_method(:identical?) { |file, _path| file.equal?(second) }
+    EnvUtil.suppress_warning do
+      File.define_singleton_method(:new) { |*_args, **_kwargs| files.shift }
+      File.define_singleton_method(:identical?) { |file, _path| file.equal?(second) }
+    end
 
     result = @pstore.send(:open_and_lock_file, @pstore_file, false)
 
@@ -271,8 +273,10 @@ class PStoreTest < Test::Unit::TestCase
     assert_equal(false, second.closed)
   ensure
     result.close if result && !result.closed
-    File.define_singleton_method(:new, original_new) if original_new
-    File.define_singleton_method(:identical?, original_identical) if original_identical
+    EnvUtil.suppress_warning do
+      File.define_singleton_method(:new, original_new) if original_new
+      File.define_singleton_method(:identical?, original_identical) if original_identical
+    end
   end
  
   def test_interrupted_atomic_save_removes_temporary_file
@@ -282,19 +286,23 @@ class PStoreTest < Test::Unit::TestCase
     @pstore.ultra_safe = true
     original_new = File.method(:new)
     store_path = @pstore_file
-    File.define_singleton_method(:new) do |path, **options|
-      file = original_new.call(path, **options)
-      if path.start_with?("#{store_path}.tmp.")
-        file.define_singleton_method(:write) { |_data| raise Interrupt }
+    EnvUtil.suppress_warning do
+      File.define_singleton_method(:new) do |path, **options|
+        file = original_new.call(path, **options)
+        if path.start_with?("#{store_path}.tmp.")
+          file.define_singleton_method(:write) { |_data| raise Interrupt }
+        end
+        file
       end
-      file
     end
 
     assert_raise(Interrupt) { @pstore.transaction { @pstore[:foo] = "new" } }
     assert_equal([], Dir.glob("#{@pstore_file}.tmp.*"))
     assert_equal("old", @pstore.transaction(true) { @pstore[:foo] })
   ensure
-    File.define_singleton_method(:new, original_new) if original_new
+    EnvUtil.suppress_warning do
+      File.define_singleton_method(:new, original_new) if original_new
+    end
     Dir.glob("#{@pstore_file}.tmp.*").each { |path| File.unlink(path) rescue nil }
   end
 

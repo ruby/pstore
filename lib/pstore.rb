@@ -439,7 +439,7 @@ class PStore
   def fetch(key, default=PStore::Error)
     in_transaction
     unless @table.key? key
-      if default == PStore::Error
+      if PStore::Error.equal?(default)
         raise PStore::Error, format("undefined key '%s'", key)
       else
         return default

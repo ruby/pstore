@@ -235,4 +235,13 @@ class PStoreTest < Test::Unit::TestCase
   ensure
     File.unlink(second_file) rescue nil
   end
+
+  def test_fetch_compares_missing_default_by_identity
+    default = Object.new
+    def default.==(_other)
+      true
+    end
+
+    assert_same(default, @pstore.transaction(true) { @pstore.fetch(:missing, default) })
+  end
 end

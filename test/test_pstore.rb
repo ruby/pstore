@@ -190,6 +190,92 @@ class PStoreTest < Test::Unit::TestCase
   def second_file
     File.join(Dir.tmpdir, "pstore.tmp2.#{Process.pid}")
   end
+
+=======
+
+  def test_truncated_read_only_store_is_not_empty
+    @pstore.transaction { @pstore[:foo] = "bar" }
+    data = File.binread(@pstore_file)
+    File.binwrite(@pstore_file, data.byteslice(0, data.bytesize - 1))
+
+    assert_raise(EOFError) { @pstore.transaction(true) { @pstore[:foo] } }
+  end
+
+  def test_store_operations_require_transaction_owner
+    ready = Thread::Queue.new
+    release = Thread::Queue.new
+    owner = Thread.new do
+      @pstore.transaction do
+        @pstore[:foo] = "bar"
+        ready << true
+        release.pop
+      end
+    end
+
+    ready.pop
+    assert_raise(PStore::Error) { @pstore[:foo] }
+    assert_raise(PStore::Error) { @pstore[:foo] = "other" }
+  ensure
+    release << true if release
+    owner.join if owner
+  end
+
+  def test_commit_targets_the_owning_store
+    inner = PStore.new(second_file)
+    @pstore.transaction do
+      @pstore[:outer] = true
+      inner.transaction do
+        inner[:inner] = true
+        @pstore.commit
+        flunk("outer commit should exit its own transaction")
+      end
+      flunk("outer commit should exit its own transaction")
+    end
+
+    assert_equal(true, @pstore.transaction(true) { @pstore[:outer] })
+    assert_nil(inner.transaction(true) { inner[:inner] })
+  ensure
+    File.unlink(second_file) rescue nil
+  end
+
+  def test_fetch_compares_missing_default_by_identity
+    default = Object.new
+    def default.==(_other)
+      true
+    end
+
+    assert_same(default, @pstore.transaction(true) { @pstore.fetch(:missing, default) })
+  end
+
+  def test_lock_retries_when_atomic_save_replaces_file
+    fake_file = Struct.new(:closed) do
+      def flock(_mode)
+        true
+      end
+
+      def close
+        self.closed = true
+      end
+    end
+    first = fake_file.new(false)
+    second = fake_file.new(false)
+    files = [first, second]
+    original_new = File.method(:new)
+    original_identical = File.method(:identical?)
+    File.define_singleton_method(:new) { |*_args, **_kwargs| files.shift }
+    File.define_singleton_method(:identical?) { |file, _path| file.equal?(second) }
+
+    result = @pstore.send(:open_and_lock_file, @pstore_file, false)
+
+    assert_same(second, result)
+    assert_equal(true, first.closed)
+    assert_equal(false, second.closed)
+  ensure
+    result.close if result && !result.closed
+    File.define_singleton_method(:new, original_new) if original_new
+    File.define_singleton_method(:identical?, original_identical) if original_identical
+  end
+ 
   def test_interrupted_atomic_save_removes_temporary_file
     return if /mswin|mingw|bccwin|wince/ =~ RUBY_PLATFORM
 
@@ -212,5 +298,4 @@ class PStoreTest < Test::Unit::TestCase
     File.define_singleton_method(:new, original_new) if original_new
     Dir.glob("#{@pstore_file}.tmp.*").each { |path| File.unlink(path) rescue nil }
   end
-
 end

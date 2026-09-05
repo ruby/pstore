@@ -389,7 +389,7 @@ class PStore
 
   # Raises PStore::Error if the calling code is not in a PStore#transaction.
   def in_transaction
-    raise PStore::Error, "not in transaction" unless @lock.locked?
+    raise PStore::Error, "not in transaction" unless @lock.owned?
   end
   #
   # Raises PStore::Error if the calling code is not in a PStore#transaction or
@@ -439,7 +439,7 @@ class PStore
   def fetch(key, default=PStore::Error)
     in_transaction
     unless @table.key? key
-      if default == PStore::Error
+      if PStore::Error.equal?(default)
         raise PStore::Error, format("undefined key '%s'", key)
       else
         return default
@@ -527,7 +527,7 @@ class PStore
   def commit
     in_transaction
     @abort = false
-    throw :pstore_abort_transaction
+    throw self
   end
 
   # Exits the current transaction block, discarding any changes
@@ -538,7 +538,7 @@ class PStore
   def abort
     in_transaction
     @abort = true
-    throw :pstore_abort_transaction
+    throw self
   end
 
   # Opens a transaction block for the store.
@@ -570,7 +570,7 @@ class PStore
         begin
           @table, checksum, original_data_size = load_data(file, read_only)
 
-          catch(:pstore_abort_transaction) do
+          catch(self) do
             value = yield(self)
           end
 
@@ -583,7 +583,7 @@ class PStore
       else
         # This can only occur if read_only == true.
         @table = {}
-        catch(:pstore_abort_transaction) do
+        catch(self) do
           value = yield(self)
         end
       end
@@ -621,23 +621,26 @@ class PStore
   # All exceptions are propagated.
   #
   def open_and_lock_file(filename, read_only)
-    if read_only
-      begin
-        file = File.new(filename, **RD_ACCESS)
+    filename = File.path(filename)
+    loop do
+      if read_only
         begin
-          file.flock(File::LOCK_SH)
-          return file
-        rescue
-          file.close
-          raise
+          file = File.new(filename, **RD_ACCESS)
+        rescue Errno::ENOENT
+          return nil
         end
-      rescue Errno::ENOENT
-        return nil
+      else
+        file = File.new(filename, **RDWR_ACCESS)
       end
-    else
-      file = File.new(filename, **RDWR_ACCESS)
-      file.flock(File::LOCK_EX)
-      return file
+      current = false
+      begin
+        file.flock(read_only ? File::LOCK_SH : File::LOCK_EX)
+        # An atomic save may have replaced the file while this lock was pending.
+        current = File.identical?(file, filename)
+        return file if current
+      ensure
+        file.close unless current
+      end
     end
   end
 
@@ -651,6 +654,7 @@ class PStore
         table = load(file)
         raise Error, "PStore file seems to be corrupted." unless table.is_a?(Hash)
       rescue EOFError
+        raise unless file.size == 0
         # This seems to be a newly-created file.
         table = {}
       end

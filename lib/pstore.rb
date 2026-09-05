@@ -389,7 +389,7 @@ class PStore
 
   # Raises PStore::Error if the calling code is not in a PStore#transaction.
   def in_transaction
-    raise PStore::Error, "not in transaction" unless @lock.locked?
+    raise PStore::Error, "not in transaction" unless @lock.owned?
   end
   #
   # Raises PStore::Error if the calling code is not in a PStore#transaction or
@@ -651,6 +651,7 @@ class PStore
         table = load(file)
         raise Error, "PStore file seems to be corrupted." unless table.is_a?(Hash)
       rescue EOFError
+        raise unless file.size == 0
         # This seems to be a newly-created file.
         table = {}
       end

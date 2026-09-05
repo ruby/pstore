@@ -218,4 +218,21 @@ class PStoreTest < Test::Unit::TestCase
     owner.join if owner
   end
 
+  def test_commit_targets_the_owning_store
+    inner = PStore.new(second_file)
+    @pstore.transaction do
+      @pstore[:outer] = true
+      inner.transaction do
+        inner[:inner] = true
+        @pstore.commit
+        flunk("outer commit should exit its own transaction")
+      end
+      flunk("outer commit should exit its own transaction")
+    end
+
+    assert_equal(true, @pstore.transaction(true) { @pstore[:outer] })
+    assert_nil(inner.transaction(true) { inner[:inner] })
+  ensure
+    File.unlink(second_file) rescue nil
+  end
 end

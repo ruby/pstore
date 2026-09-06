@@ -698,7 +698,7 @@ class PStore
 
   def save_data_with_atomic_file_rename_strategy(data, file)
     temp_filename = "#{@filename}.tmp.#{Process.pid}.#{rand 1000000}"
-    temp_file = File.new(temp_filename, **WR_ACCESS)
+    temp_file = File.new(temp_filename, **WR_ACCESS, perm: 0o000)
     begin
       temp_file.flock(File::LOCK_EX)
       temp_file.write(data)

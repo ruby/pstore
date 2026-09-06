@@ -76,6 +76,21 @@ class PStoreTest < Test::Unit::TestCase
     end
   end
 
+  def test_ultra_safe_mode_preserves_file_mode
+    omit("ultra_safe mode is not supported on Windows") if Gem.win_platform?
+
+    @pstore.transaction { |store| store[:foo] = "bar" }
+    File.chmod(0o600, @pstore_file)
+    @pstore.ultra_safe = true
+
+    original_umask = File.umask(0o000)
+    @pstore.transaction { |store| store[:foo] = "baz" }
+
+    assert_equal 0o600, File.stat(@pstore_file).mode & 0o7777
+  ensure
+    File.umask(original_umask) if original_umask
+  end
+
   def test_writing_inside_readonly_transaction_raises_error
     assert_raise(PStore::Error) do
       @pstore.transaction(true) do

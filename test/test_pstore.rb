@@ -278,7 +278,7 @@ class PStoreTest < Test::Unit::TestCase
       File.define_singleton_method(:identical?, original_identical) if original_identical
     end
   end
- 
+
   def test_interrupted_atomic_save_removes_temporary_file
     return if /mswin|mingw|bccwin|wince/ =~ RUBY_PLATFORM
 

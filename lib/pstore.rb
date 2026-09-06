@@ -703,6 +703,7 @@ class PStore
       temp_file.flock(File::LOCK_EX)
       temp_file.write(data)
       temp_file.flush
+      temp_file.chmod(file.stat.mode)
       File.rename(temp_filename, @filename)
     rescue Exception
       File.unlink(temp_file) rescue nil

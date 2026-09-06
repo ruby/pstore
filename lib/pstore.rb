@@ -367,12 +367,13 @@ class PStore
   #
   # A \PStore object is
   # {reentrant}[https://en.wikipedia.org/wiki/Reentrancy_(computing)].
-  # If argument +thread_safe+ is given as +true+,
+  # If argument or keyword argument +thread_safe+ is given as +true+,
   # the object is also thread-safe (at the cost of a small performance penalty):
   #
   #   store = PStore.new(path, true)
+  #   store = PStore.new(path, thread_safe: true)
   #
-  def initialize(file, thread_safe = false)
+  def initialize(file, _thread_safe = false, thread_safe: _thread_safe)
     dir = File::dirname(file)
     unless File::directory? dir
       raise PStore::Error, format("directory %s does not exist", dir)

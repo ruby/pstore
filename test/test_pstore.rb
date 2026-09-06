@@ -150,6 +150,12 @@ class PStoreTest < Test::Unit::TestCase
     assert_equal false, PStore.new(@pstore_file, true, thread_safe: false).instance_variable_get(:@thread_safe)
   end
 
+  def test_ultra_safe_argument
+    assert_equal false, PStore.new(@pstore_file).ultra_safe
+    assert_equal true, PStore.new(@pstore_file, ultra_safe: true).ultra_safe
+    assert_equal false, PStore.new(@pstore_file, ultra_safe: false).ultra_safe
+  end
+
   def test_nested_transaction_raises_error
     assert_raise(PStore::Error) do
       @pstore.transaction { @pstore.transaction { } }

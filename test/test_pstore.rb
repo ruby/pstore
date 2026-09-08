@@ -143,6 +143,46 @@ class PStoreTest < Test::Unit::TestCase
     File.unlink(second_file) rescue nil
   end
 
+  def test_thread_safe_argument
+    assert_equal false, PStore.new(@pstore_file).instance_variable_get(:@thread_safe)
+    assert_equal true, PStore.new(@pstore_file, true).instance_variable_get(:@thread_safe)
+    assert_equal true, PStore.new(@pstore_file, thread_safe: true).instance_variable_get(:@thread_safe)
+    assert_equal false, PStore.new(@pstore_file, true, thread_safe: false).instance_variable_get(:@thread_safe)
+  end
+
+  def test_ultra_safe_argument
+    assert_equal false, PStore.new(@pstore_file).ultra_safe
+    assert_equal true, PStore.new(@pstore_file, ultra_safe: true).ultra_safe
+    assert_equal false, PStore.new(@pstore_file, ultra_safe: false).ultra_safe
+  end
+
+  def test_follows_symlink_by_default
+    Dir.mktmpdir do |dir|
+      target = File.join(dir, "target")
+      link = File.join(dir, "link")
+      PStore.new(target).transaction { |store| store[:key] = "value" }
+      File.symlink(target, link)
+
+      assert_equal "value", PStore.new(link).transaction(true) { |store| store[:key] }
+    end
+  end
+
+  def test_does_not_follow_symlink_when_disabled
+    omit("O_NOFOLLOW is not supported") unless nofollow_supported?
+
+    Dir.mktmpdir do |dir|
+      target = File.join(dir, "target")
+      link = File.join(dir, "link")
+      File.write(target, "")
+      File.symlink(target, link)
+
+      assert_raise(Errno::ELOOP) do
+        PStore.new(link, follow_symlink: false).transaction {}
+      end
+      assert_empty File.read(target)
+    end
+  end
+
   def test_nested_transaction_raises_error
     assert_raise(PStore::Error) do
       @pstore.transaction { @pstore.transaction { } }
@@ -201,6 +241,23 @@ class PStoreTest < Test::Unit::TestCase
         @pstore.delete(key)
       end
     end
+  end
+
+  def nofollow_supported?
+    return false unless IO.const_defined?(:NOFOLLOW)
+
+    Dir.mktmpdir do |dir|
+      target = File.join(dir, "target")
+      link = File.join(dir, "link")
+      File.write(target, "")
+      File.symlink(target, link)
+      File.open(link, IO::RDONLY|IO::NOFOLLOW).close
+    end
+    false
+  rescue Errno::ELOOP
+    true
+  rescue NotImplementedError, SystemCallError
+    false
   end
 
   def second_file

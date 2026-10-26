@@ -327,7 +327,7 @@ require "digest"
 #
 class PStore
   # :stopdoc:
-  VERSION = "0.2.1"
+  VERSION = "0.3.0"
 
   RDWR_ACCESS = IO::RDWR | IO::CREAT | IO::BINARY
   RD_ACCESS = IO::RDONLY | IO::BINARY

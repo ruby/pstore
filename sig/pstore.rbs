@@ -481,41 +481,6 @@ class PStore[unchecked out K = untyped, unchecked out V = untyped]
   #
   def ultra_safe=: (bool) -> bool
 
-  private
-
-  def dump: (untyped table) -> untyped
-
-  # <!--
-  #   rdoc-file=lib/pstore.rb
-  #   - empty_marshal_checksum()
-  # -->
-  #
-  def empty_marshal_checksum: () -> String
-
-  # <!--
-  #   rdoc-file=lib/pstore.rb
-  #   - empty_marshal_data()
-  # -->
-  #
-  def empty_marshal_data: () -> String
-
-  # <!--
-  #   rdoc-file=lib/pstore.rb
-  #   - in_transaction()
-  # -->
-  # Raises PStore::Error if the calling code is not in a PStore#transaction.
-  #
-  def in_transaction: () -> void
-
-  # <!--
-  #   rdoc-file=lib/pstore.rb
-  #   - in_transaction_wr()
-  # -->
-  # Raises PStore::Error if the calling code is not in a PStore#transaction or if
-  # the code is in a read-only PStore#transaction.
-  #
-  def in_transaction_wr: () -> void
-
   # <!--
   #   rdoc-file=lib/pstore.rb
   #   - new(file, thread_safe = false)
@@ -537,72 +502,5 @@ class PStore[unchecked out K = untyped, unchecked out V = untyped]
   #
   def initialize: (path file, ?boolish thread_safe) -> void
 
-  def load: (untyped content) -> untyped
-
-  # <!--
-  #   rdoc-file=lib/pstore.rb
-  #   - load_data(file, read_only)
-  # -->
-  # Load the given PStore file. If `read_only` is true, the unmarshalled Hash will
-  # be returned. If `read_only` is false, a 3-tuple will be returned: the
-  # unmarshalled Hash, a checksum of the data, and the size of the data.
-  #
-  def load_data: (path file, true read_only) -> Hash[untyped, untyped]
-               | (path file, false read_only) -> [Hash[untyped, untyped], String, Integer]
-
-  # <!--
-  #   rdoc-file=lib/pstore.rb
-  #   - on_windows?()
-  # -->
-  #
-  def on_windows?: () -> bool
-
-  # <!--
-  #   rdoc-file=lib/pstore.rb
-  #   - open_and_lock_file(filename, read_only)
-  # -->
-  # Open the specified filename (either in read-only mode or in read-write mode)
-  # and lock it for reading or writing.
-  #
-  # The opened File object will be returned. If *read_only* is true, and the file
-  # does not exist, then nil will be returned.
-  #
-  # All exceptions are propagated.
-  #
-  def open_and_lock_file: (string filename, bool read_only) -> File?
-
-  # <!--
-  #   rdoc-file=lib/pstore.rb
-  #   - save_data(original_checksum, original_file_size, file)
-  # -->
-  #
-  def save_data: (untyped original_checksum, untyped original_file_size, untyped file) -> untyped
-
-  # <!--
-  #   rdoc-file=lib/pstore.rb
-  #   - save_data_with_atomic_file_rename_strategy(data, file)
-  # -->
-  #
-  def save_data_with_atomic_file_rename_strategy: (string data, File file) -> void
-
-  # <!--
-  #   rdoc-file=lib/pstore.rb
-  #   - save_data_with_fast_strategy(data, file)
-  # -->
-  #
-  def save_data_with_fast_strategy: (string data, File file) -> void
-
-  EMPTY_MARSHAL_CHECKSUM: String
-
-  EMPTY_MARSHAL_DATA: String
-
-  EMPTY_STRING: String
-
-  RDWR_ACCESS: { mode: Integer, encoding: Encoding }
-
-  RD_ACCESS: { mode: Integer, encoding: Encoding }
-
   VERSION: String
-
-  WR_ACCESS: { mode: Integer, encoding: Encoding }
 end

@@ -300,6 +300,9 @@
 #     end
 #
 class PStore[unchecked out K = untyped, unchecked out V = untyped]
+  class Error < StandardError
+  end
+
   # <!--
   #   rdoc-file=lib/pstore.rb
   #   - [](key)
@@ -400,7 +403,8 @@ class PStore[unchecked out K = untyped, unchecked out V = untyped]
   #
   # Raises an exception if called outside a transaction block.
   #
-  def fetch: (K name, ?V default) -> V
+  def fetch: (K name) -> V
+            | [T] (K name, T default) -> (V | T)
 
   # <!--
   #   rdoc-file=lib/pstore.rb
@@ -500,7 +504,7 @@ class PStore[unchecked out K = untyped, unchecked out V = untyped]
   #
   #     store = PStore.new(path, true)
   #
-  def initialize: (path file, ?boolish thread_safe) -> void
+  def initialize: (path file, ?boolish thread_safe, ?thread_safe: boolish, ?ultra_safe: bool, ?follow_symlink: boolish) -> void
 
   VERSION: String
 end

@@ -8,3 +8,7 @@ group :development do
   gem "test-unit"
   gem "test-unit-ruby-core"
 end
+
+group :sig, optional: true do
+  gem "rbs"
+end

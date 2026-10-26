@@ -11,4 +11,5 @@ end
 
 group :sig, optional: true do
   gem "rbs"
+  gem "rdoc"
 end
